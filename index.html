@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Anajak Host — Deploy in Seconds</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="logo">AJ</span> Anajak Host</a>
+      <div class="nav-links">
+        {% if user %}
+          <a href="/dashboard">Dashboard</a>
+          {% if user.role == 'admin' %}<a href="/admin">Admin</a>{% endif %}
+          <a href="/api/auth/logout" onclick="event.preventDefault();fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'}).then(()=>location='/')">Logout</a>
+        {% else %}
+          <a href="/login">Login</a>
+          <a class="btn btn-primary btn-sm" href="/register">Get Started</a>
+        {% endif %}
+      </div>
+    </nav>
+
+    <section class="hero">
+      <h1>Deploy Your Project in Seconds</h1>
+      <p>Simple, powerful and affordable hosting for bots, websites, APIs, game servers and custom projects.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="{% if user %}/create{% else %}/register{% endif %}">Get Started</a>
+        <a class="btn btn-ghost" href="#plans">Explore Hosting</a>
+      </div>
+    </section>
+
+    <section class="mb-2">
+      <h2 style="margin-bottom:1rem;text-align:center">Hosting Types</h2>
+      <div class="grid grid-3">
+        <div class="card"><h3>Bot Hosting</h3><p class="muted">Telegram, Discord and automation bots with start/stop and live logs.</p></div>
+        <div class="card"><h3>Web Hosting</h3><p class="muted">Static sites and web apps with file manager and custom domain support.</p></div>
+        <div class="card"><h3>API / Backend</h3><p class="muted">Python, Node.js and other backends with port and environment variables.</p></div>
+        <div class="card"><h3>Game Servers</h3><p class="muted">Game templates managed by admin with resource limits.</p></div>
+        <div class="card"><h3>Docker Projects</h3><p class="muted">Container-ready workflow when Docker is enabled on the host.</p></div>
+        <div class="card"><h3>Custom Projects</h3><p class="muted">Flexible start commands for any supported runtime.</p></div>
+      </div>
+    </section>
+
+    <section id="plans" class="mt-3 mb-2">
+      <h2 style="margin-bottom:1rem;text-align:center">Plans</h2>
+      <div class="grid grid-4">
+        <div class="plan">
+          <h3>Basic</h3>
+          <div class="price">$0.50<span class="muted" style="font-size:.9rem">/mo</span></div>
+          <ul>
+            <li>512 MB RAM</li>
+            <li>1 vCPU</li>
+            <li>5 GB Storage</li>
+            <li>1 Hosting</li>
+          </ul>
+        </div>
+        <div class="plan">
+          <h3>Starter</h3>
+          <div class="price">$1.50<span class="muted" style="font-size:.9rem">/mo</span></div>
+          <ul>
+            <li>1 GB RAM</li>
+            <li>1 vCPU</li>
+            <li>10 GB Storage</li>
+            <li>3 Hostings</li>
+          </ul>
+        </div>
+        <div class="plan">
+          <h3>Pro</h3>
+          <div class="price">$4.00<span class="muted" style="font-size:.9rem">/mo</span></div>
+          <ul>
+            <li>2 GB RAM</li>
+            <li>2 vCPU</li>
+            <li>25 GB Storage</li>
+            <li>10 Hostings</li>
+          </ul>
+        </div>
+        <div class="plan">
+          <h3>Advanced</h3>
+          <div class="price">$8.00<span class="muted" style="font-size:.9rem">/mo</span></div>
+          <ul>
+            <li>4 GB RAM</li>
+            <li>4 vCPU</li>
+            <li>50 GB Storage</li>
+            <li>20 Hostings</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">Anajak Host — Control panel for real server processes. Not affiliated with other brands.</footer>
+  </div>
+</body>
+</html>

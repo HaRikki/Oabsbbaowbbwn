@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard — Anajak Host</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="logo">AJ</span> Anajak Host</a>
+      <div class="nav-links">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/create">Create</a>
+        <a href="/billing">Billing</a>
+        <a href="/support">Support</a>
+        <a href="/notifications">Notifications{% if unread %} ({{ unread }}){% endif %}</a>
+        <a href="/settings">Settings</a>
+        {% if user.role == 'admin' %}<a href="/admin">Admin</a>{% endif %}
+        <a href="#" id="logout">Logout</a>
+      </div>
+    </nav>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <a class="active" href="/dashboard">My Hosting</a>
+        <a href="/create">Create Hosting</a>
+        <a href="/billing">Billing</a>
+        <a href="/support">Support</a>
+        <a href="/notifications">Notifications</a>
+        <a href="/settings">Settings</a>
+      </aside>
+      <main class="main">
+        <div class="flex-between mb-2">
+          <div>
+            <h2>Welcome, {{ user.full_name or user.username }}</h2>
+            <p class="muted">Manage your projects</p>
+          </div>
+          <a class="btn btn-primary" href="/create">Create Hosting</a>
+        </div>
+
+        {% if not projects %}
+        <div class="card">
+          <p class="muted">No projects yet. Create your first hosting.</p>
+          <a class="btn btn-primary mt-2" href="/create">Create Hosting</a>
+        </div>
+        {% else %}
+        <div class="grid grid-2">
+          {% for p in projects %}
+          <div class="card">
+            <div class="flex-between">
+              <h3>{{ p.name }}</h3>
+              <span>
+                <span class="status-dot status-{{ p.status if p.status in ['running','stopped','error'] else 'stopped' }}"></span>
+                {{ p.status }}
+              </span>
+            </div>
+            <p class="muted">{{ p.project_type }} · {{ p.ram_mb }} MB · {{ p.cpu }} vCPU · {{ p.storage_gb }} GB</p>
+            {% if p.expires_at %}<p class="muted">Expires: {{ p.expires_at.strftime('%Y-%m-%d') }}</p>{% endif %}
+            <div class="mt-2" style="display:flex;gap:.5rem;flex-wrap:wrap">
+              <a class="btn btn-primary btn-sm" href="/project/{{ p.id }}">Manage</a>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </main>
+    </div>
+  </div>
+  <script>
+    document.getElementById('logout').onclick = async (e) => {
+      e.preventDefault();
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+      location.href = '/';
+    };
+  </script>
+</body>
+</html>

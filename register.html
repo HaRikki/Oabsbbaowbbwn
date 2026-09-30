@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Register — Anajak Host</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="logo">AJ</span> Anajak Host</a>
+      <div class="nav-links"><a href="/login">Login</a></div>
+    </nav>
+    <div class="card form-card">
+      <h2 style="margin-bottom:1rem">Create Account</h2>
+      <div id="err" class="alert alert-error hidden"></div>
+      <form id="form">
+        <label>Full name</label>
+        <input type="text" name="full_name" />
+        <label>Username</label>
+        <input type="text" name="username" required />
+        <label>Email</label>
+        <input type="email" name="email" required />
+        <label>Password</label>
+        <input type="password" name="password" required minlength="6" />
+        <button class="btn btn-primary btn-block" type="submit">Register</button>
+      </form>
+      <p class="muted mt-2" style="text-align:center">Have an account? <a href="/login">Login</a></p>
+    </div>
+  </div>
+  <script src="/static/js/api.js"></script>
+  <script>
+    document.getElementById('form').onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      try {
+        await api('/api/auth/register', { method: 'POST', body: fd });
+        location.href = '/dashboard';
+      } catch (err) {
+        showErr(document.getElementById('err'), err.message);
+      }
+    };
+  </script>
+</body>
+</html>

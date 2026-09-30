@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ project.name }} — Anajak Host</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="logo">AJ</span> Anajak Host</a>
+      <div class="nav-links"><a href="/dashboard">Dashboard</a></div>
+    </nav>
+
+    <div class="flex-between mt-2 mb-2">
+      <div>
+        <h2>{{ project.name }}</h2>
+        <p class="muted">
+          <span class="status-dot status-{{ status.status }}"></span>
+          {{ status.status }} · {{ project.project_type }} · {{ project.ram_mb }} MB / {{ project.cpu }} vCPU / {{ project.storage_gb }} GB
+        </p>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="act('start')">Start</button>
+        <button class="btn btn-ghost btn-sm" onclick="act('restart')">Restart</button>
+        <button class="btn btn-danger btn-sm" onclick="act('stop')">Stop</button>
+      </div>
+    </div>
+
+    <div class="grid grid-3 mb-2">
+      <div class="card">
+        <div class="muted">CPU</div>
+        <strong>{% if metrics.cpu_percent is not none %}{{ metrics.cpu_percent }}%{% else %}Unavailable{% endif %}</strong>
+      </div>
+      <div class="card">
+        <div class="muted">RAM</div>
+        <strong>{% if metrics.ram_mb is not none %}{{ metrics.ram_mb }} MB{% else %}Unavailable{% endif %}</strong>
+      </div>
+      <div class="card">
+        <div class="muted">Uptime</div>
+        <strong>{% if status.uptime_sec %}{{ status.uptime_sec }}s{% else %}—{% endif %}</strong>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="logs">Logs</button>
+      <button class="tab" data-tab="files">Files</button>
+      <button class="tab" data-tab="env">Environment</button>
+      <button class="tab" data-tab="settings">Settings</button>
+      <button class="tab" data-tab="backups">Backups</button>
+    </div>
+
+    <div id="tab-logs" class="card">
+      <div class="flex-between mb-2">
+        <h3>Logs</h3>
+        <button class="btn btn-ghost btn-sm" onclick="refreshLogs()">Refresh</button>
+      </div>
+      <div class="console" id="logBox">{{ logs or 'No logs yet.' }}</div>
+    </div>
+
+    <div id="tab-files" class="card hidden">
+      <div class="flex-between mb-2">
+        <h3>File Manager</h3>
+        <div style="display:flex;gap:.5rem">
+          <input type="file" id="fileInput" />
+          <button class="btn btn-primary btn-sm" onclick="uploadFile()">Upload</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadFiles()">Refresh</button>
+        </div>
+      </div>
+      <p class="muted" id="filePath">/</p>
+      <div id="fileList"></div>
+    </div>
+
+    <div id="tab-env" class="card hidden">
+      <h3 class="mb-2">Environment Variables</h3>
+      <div class="row">
+        <input id="envKey" placeholder="KEY" style="flex:1" />
+        <input id="envVal" placeholder="VALUE" style="flex:1" />
+        <button class="btn btn-primary btn-sm" onclick="addEnv()">Add</button>
+      </div>
+      <ul class="mt-2" id="envList">
+        {% for k, v in (project.env_vars or {}).items() %}
+        <li class="muted">{{ k }}=*** <button class="btn btn-danger btn-sm" onclick="delEnv('{{ k }}')">Delete</button></li>
+        {% else %}
+        <li class="muted">No variables</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div id="tab-settings" class="card hidden">
+      <h3 class="mb-2">Settings</h3>
+      <label>Start command</label>
+      <input id="setCmd" value="{{ project.start_command or '' }}" />
+      <label>Port</label>
+      <input id="setPort" type="number" value="{{ project.port or '' }}" />
+      <label>Domain</label>
+      <input id="setDomain" value="{{ project.domain or '' }}" placeholder="example.com" />
+      <label><input type="checkbox" id="setAutoStart" {% if project.auto_start %}checked{% endif %} /> Auto start</label>
+      <label><input type="checkbox" id="setAutoRestart" {% if project.auto_restart %}checked{% endif %} /> Auto restart</label>
+      <button class="btn btn-primary mt-2" onclick="saveSettings()">Save</button>
+      <button class="btn btn-danger mt-2" onclick="deleteProject()">Delete Project</button>
+    </div>
+
+    <div id="tab-backups" class="card hidden">
+      <div class="flex-between mb-2">
+        <h3>Backups</h3>
+        <button class="btn btn-primary btn-sm" onclick="makeBackup()">Create Backup</button>
+      </div>
+      {% for b in backups %}
+      <div class="muted">{{ b.filename }} · {{ b.size_bytes }} bytes · {{ b.created_at }}</div>
+      {% else %}
+      <p class="muted">No backups</p>
+      {% endfor %}
+    </div>
+  </div>
+  <script src="/static/js/api.js"></script>
+  <script>
+    const pid = {{ project.id }};
+    document.querySelectorAll('.tab').forEach(t => {
+      t.onclick = () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        ['logs','files','env','settings','backups'].forEach(id => {
+          document.getElementById('tab-' + id).classList.toggle('hidden', id !== t.dataset.tab);
+        });
+        if (t.dataset.tab === 'files') loadFiles();
+      };
+    });
+
+    async function act(action) {
+      try {
+        await api('/api/projects/' + pid + '/' + action, { method: 'POST' });
+        location.reload();
+      } catch (e) { alert(e.message); }
+    }
+    async function refreshLogs() {
+      const d = await api('/api/projects/' + pid + '/logs');
+      document.getElementById('logBox').textContent = d.logs || 'No logs';
+    }
+    async function loadFiles(path = '') {
+      const d = await api('/api/projects/' + pid + '/files?path=' + encodeURIComponent(path));
+      document.getElementById('filePath').textContent = '/' + (d.path || '');
+      const list = document.getElementById('fileList');
+      list.innerHTML = '';
+      if (path) {
+        const up = document.createElement('div');
+        up.innerHTML = '<a href="#">[DIR] ..</a>';
+        up.onclick = (e) => { e.preventDefault(); loadFiles(path.split('/').slice(0,-1).join('/')); };
+        list.appendChild(up);
+      }
+      (d.items || []).forEach(item => {
+        const row = document.createElement('div');
+        row.style.padding = '.35rem 0';
+        const label = (item.is_dir ? '[DIR] ' : '[FILE] ') + item.name;
+        if (item.is_dir) {
+          row.innerHTML = '<a href="#">' + label + '</a>';
+          row.onclick = (e) => { e.preventDefault(); loadFiles((path ? path + '/' : '') + item.name); };
+        } else {
+          row.innerHTML = label + ' <span class="muted">' + item.size + ' B</span> <button class="btn btn-danger btn-sm">Delete</button>';
+          row.querySelector('button').onclick = async () => {
+            await api('/api/projects/' + pid + '/files?path=' + encodeURIComponent((path ? path + '/' : '') + item.name), { method: 'DELETE' });
+            loadFiles(path);
+          };
+        }
+        list.appendChild(row);
+      });
+      window._filePath = path;
+    }
+    async function uploadFile() {
+      const f = document.getElementById('fileInput').files[0];
+      if (!f) return alert('Select a file');
+      const fd = new FormData();
+      fd.append('file', f);
+      fd.append('path', window._filePath || '');
+      await api('/api/projects/' + pid + '/files/upload', { method: 'POST', body: fd });
+      loadFiles(window._filePath || '');
+    }
+    async function addEnv() {
+      await postForm('/api/projects/' + pid + '/env', {
+        key: document.getElementById('envKey').value,
+        value: document.getElementById('envVal').value,
+      });
+      location.reload();
+    }
+    async function delEnv(key) {
+      await api('/api/projects/' + pid + '/env/' + encodeURIComponent(key), { method: 'DELETE' });
+      location.reload();
+    }
+    async function saveSettings() {
+      await postForm('/api/projects/' + pid + '/settings', {
+        start_command: document.getElementById('setCmd').value,
+        port: document.getElementById('setPort').value || 0,
+        domain: document.getElementById('setDomain').value,
+        auto_start: document.getElementById('setAutoStart').checked,
+        auto_restart: document.getElementById('setAutoRestart').checked,
+      });
+      alert('Saved');
+    }
+    async function deleteProject() {
+      if (!confirm('Delete this project?')) return;
+      await api('/api/projects/' + pid, { method: 'DELETE' });
+      location.href = '/dashboard';
+    }
+    async function makeBackup() {
+      await api('/api/projects/' + pid + '/backup', { method: 'POST' });
+      location.reload();
+    }
+  </script>
+</body>
+</html>

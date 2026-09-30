@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notifications — Anajak Host</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="logo">AJ</span> Anajak Host</a>
+      <div class="nav-links"><a href="/dashboard">Dashboard</a></div>
+    </nav>
+    <div class="flex-between mt-2 mb-2">
+      <h2>Notifications</h2>
+      <button class="btn btn-ghost btn-sm" onclick="readAll()">Mark all read</button>
+    </div>
+    <div class="card">
+      {% for n in notes %}
+      <div style="padding:.75rem 0;border-bottom:1px solid var(--border);opacity:{% if n.is_read %}0.6{% else %}1{% endif %}">
+        <strong>{{ n.title }}</strong>
+        <p class="muted">{{ n.body }}</p>
+        <span class="muted">{{ n.created_at }}</span>
+      </div>
+      {% else %}
+      <p class="muted">No notifications</p>
+      {% endfor %}
+    </div>
+  </div>
+  <script src="/static/js/api.js"></script>
+  <script>
+    async function readAll() {
+      await api('/api/notifications/read-all', { method: 'POST' });
+      location.reload();
+    }
+  </script>
+</body>
+</html>

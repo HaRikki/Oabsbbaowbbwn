@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin — Anajak Host</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="logo">AJ</span> Anajak Host</a>
+      <div class="nav-links">
+        <a href="/dashboard">User Dashboard</a>
+        <a href="/admin">Admin</a>
+      </div>
+    </nav>
+
+    <h2 class="mt-2 mb-2">Admin Panel</h2>
+    <div class="grid grid-4 mb-2">
+      <div class="card"><div class="muted">Users</div><strong>{{ stats.users }}</strong></div>
+      <div class="card"><div class="muted">Projects</div><strong>{{ stats.projects }}</strong></div>
+      <div class="card"><div class="muted">Running</div><strong>{{ stats.running }}</strong></div>
+      <div class="card"><div class="muted">Pending Orders</div><strong>{{ stats.pending_orders }}</strong></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="users">Users</button>
+      <button class="tab" data-tab="projects">Projects</button>
+      <button class="tab" data-tab="orders">Orders</button>
+      <button class="tab" data-tab="plans">Plans</button>
+      <button class="tab" data-tab="games">Games</button>
+      <button class="tab" data-tab="tickets">Support</button>
+      <button class="tab" data-tab="system">System</button>
+      <button class="tab" data-tab="broadcast">Broadcast</button>
+      <button class="tab" data-tab="audit">Audit</button>
+    </div>
+
+    <div id="tab-users" class="card">
+      <table class="table">
+        <thead><tr><th>ID</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ u.id }}</td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.role }}</td>
+            <td>{% if u.is_suspended %}suspended{% else %}active{% endif %}</td>
+            <td>
+              {% if u.role != 'admin' %}
+              <button class="btn btn-ghost btn-sm" onclick="suspend({{ u.id }})">Suspend</button>
+              <button class="btn btn-ghost btn-sm" onclick="activate({{ u.id }})">Activate</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div id="tab-projects" class="card hidden">
+      <table class="table">
+        <thead><tr><th>ID</th><th>Name</th><th>User</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for p in projects %}
+          <tr>
+            <td>{{ p.id }}</td>
+            <td><a href="/project/{{ p.id }}">{{ p.name }}</a></td>
+            <td>{{ p.user_id }}</td>
+            <td>{{ p.project_type }}</td>
+            <td>{{ p.status }}</td>
+            <td>
+              <button class="btn btn-ghost btn-sm" onclick="pAct({{ p.id }},'stop')">Stop</button>
+              <button class="btn btn-ghost btn-sm" onclick="pAct({{ p.id }},'restart')">Restart</button>
+              <button class="btn btn-danger btn-sm" onclick="pDel({{ p.id }})">Delete</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div id="tab-orders" class="card hidden">
+      <table class="table">
+        <thead><tr><th>ID</th><th>User</th><th>Amount</th><th>Method</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for o in orders %}
+          <tr>
+            <td>#{{ o.id }}</td>
+            <td>{{ o.user_id }}</td>
+            <td>${{ '%.2f'|format(o.amount) }}</td>
+            <td>{{ o.payment_method }}</td>
+            <td>{{ o.status }}</td>
+            <td>
+              {% if o.status in ['pending','awaiting_confirm'] %}
+              <button class="btn btn-primary btn-sm" onclick="confirmOrder({{ o.id }})">Confirm</button>
+              <button class="btn btn-danger btn-sm" onclick="rejectOrder({{ o.id }})">Reject</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div id="tab-plans" class="card hidden">
+      <h3 class="mb-2">Plans</h3>
+      {% for p in plans %}
+      <div class="flex-between" style="padding:.4rem 0;border-bottom:1px solid var(--border)">
+        <span>{{ p.name }} — ${{ '%.2f'|format(p.price_monthly) }} · {{ p.ram_mb }}MB · {% if p.is_active %}active{% else %}off{% endif %}</span>
+        <button class="btn btn-ghost btn-sm" onclick="togglePlan({{ p.id }})">Toggle</button>
+      </div>
+      {% endfor %}
+      <h3 class="mt-2 mb-2">Add Plan</h3>
+      <input id="pn" placeholder="Name" />
+      <input id="ps" placeholder="Slug" />
+      <input id="pr" type="number" placeholder="RAM MB" value="512" />
+      <input id="pc" type="number" step="0.5" placeholder="CPU" value="1" />
+      <input id="pst" type="number" placeholder="Storage GB" value="5" />
+      <input id="pp" type="number" step="0.01" placeholder="Price" value="1" />
+      <button class="btn btn-primary" onclick="addPlan()">Create Plan</button>
+    </div>
+
+    <div id="tab-games" class="card hidden">
+      {% for g in games %}
+      <div class="muted">{{ g.name }} ({{ g.slug }}) · port {{ g.default_port }}</div>
+      {% endfor %}
+      <h3 class="mt-2">Add Game Template</h3>
+      <input id="gn" placeholder="Name" />
+      <input id="gs" placeholder="Slug" />
+      <input id="gi" placeholder="Docker image (optional)" />
+      <input id="gp" type="number" value="25565" placeholder="Port" />
+      <button class="btn btn-primary" onclick="addGame()">Create</button>
+    </div>
+
+    <div id="tab-tickets" class="card hidden">
+      {% for t in tickets %}
+      <div class="flex-between" style="padding:.4rem 0;border-bottom:1px solid var(--border)">
+        <a href="/support/{{ t.id }}">#{{ t.id }} {{ t.subject }}</a>
+        <span class="badge badge-info">{{ t.status }}</span>
+      </div>
+      {% else %}
+      <p class="muted">No tickets</p>
+      {% endfor %}
+    </div>
+
+    <div id="tab-system" class="card hidden">
+      <button class="btn btn-ghost btn-sm mb-2" onclick="loadSys()">Refresh</button>
+      <pre class="console" id="sysBox">Click Refresh</pre>
+    </div>
+
+    <div id="tab-broadcast" class="card hidden">
+      <label>Title</label>
+      <input id="bt" />
+      <label>Body</label>
+      <textarea id="bb" rows="3"></textarea>
+      <button class="btn btn-primary" onclick="broadcast()">Send to all users</button>
+    </div>
+
+    <div id="tab-audit" class="card hidden">
+      <table class="table">
+        <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th></tr></thead>
+        <tbody>
+          {% for a in audits %}
+          <tr><td>{{ a.created_at }}</td><td>{{ a.user_id }}</td><td>{{ a.action }}</td><td>{{ a.detail }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script src="/static/js/api.js"></script>
+  <script>
+    document.querySelectorAll('.tab').forEach(t => {
+      t.onclick = () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        ['users','projects','orders','plans','games','tickets','system','broadcast','audit'].forEach(id => {
+          document.getElementById('tab-' + id).classList.toggle('hidden', id !== t.dataset.tab);
+        });
+      };
+    });
+    async function suspend(id) { await api('/api/admin/users/'+id+'/suspend',{method:'POST'}); location.reload(); }
+    async function activate(id) { await api('/api/admin/users/'+id+'/activate',{method:'POST'}); location.reload(); }
+    async function confirmOrder(id) { await api('/api/admin/orders/'+id+'/confirm',{method:'POST'}); location.reload(); }
+    async function rejectOrder(id) { await api('/api/admin/orders/'+id+'/reject',{method:'POST'}); location.reload(); }
+    async function pAct(id, a) { await api('/api/projects/'+id+'/'+a,{method:'POST'}); location.reload(); }
+    async function pDel(id) { if(confirm('Delete?')) { await api('/api/projects/'+id,{method:'DELETE'}); location.reload(); } }
+    async function togglePlan(id) { await api('/api/admin/plans/'+id+'/toggle',{method:'POST'}); location.reload(); }
+    async function addPlan() {
+      await postForm('/api/admin/plans', {
+        name: pn.value, slug: ps.value, ram_mb: pr.value, cpu: pc.value,
+        storage_gb: pst.value, price_monthly: pp.value, max_hostings: 3,
+      });
+      location.reload();
+    }
+    async function addGame() {
+      await postForm('/api/admin/games', { name: gn.value, slug: gs.value, docker_image: gi.value, default_port: gp.value });
+      location.reload();
+    }
+    async function loadSys() {
+      const d = await api('/api/admin/system');
+      sysBox.textContent = JSON.stringify(d, null, 2);
+    }
+    async function broadcast() {
+      await postForm('/api/admin/broadcast', { title: bt.value, body: bb.value });
+      alert('Sent');
+    }
+  </script>
+</body>
+</html>

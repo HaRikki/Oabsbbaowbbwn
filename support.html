@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Support — Anajak Host</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="logo">AJ</span> Anajak Host</a>
+      <div class="nav-links"><a href="/dashboard">Dashboard</a></div>
+    </nav>
+    <h2 class="mt-2 mb-2">Support</h2>
+    <div class="card mb-2">
+      <h3>New Ticket</h3>
+      <label>Subject</label>
+      <input id="subject" />
+      <label>Message</label>
+      <textarea id="message" rows="4"></textarea>
+      <button class="btn btn-primary" onclick="createTicket()">Submit</button>
+    </div>
+    <div class="card">
+      <h3 class="mb-2">Your Tickets</h3>
+      {% for t in tickets %}
+      <div class="flex-between" style="padding:.5rem 0;border-bottom:1px solid var(--border)">
+        <div>
+          <a href="/support/{{ t.id }}"><strong>{{ t.subject }}</strong></a>
+          <span class="badge badge-info">{{ t.status }}</span>
+        </div>
+        <span class="muted">{{ t.updated_at }}</span>
+      </div>
+      {% else %}
+      <p class="muted">No tickets</p>
+      {% endfor %}
+    </div>
+  </div>
+  <script src="/static/js/api.js"></script>
+  <script>
+    async function createTicket() {
+      const d = await postForm('/api/support/create', {
+        subject: document.getElementById('subject').value,
+        message: document.getElementById('message').value,
+      });
+      location.href = '/support/' + d.id;
+    }
+  </script>
+</body>
+</html>

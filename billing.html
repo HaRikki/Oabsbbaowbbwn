@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Billing — Anajak Host</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="logo">AJ</span> Anajak Host</a>
+      <div class="nav-links"><a href="/dashboard">Dashboard</a></div>
+    </nav>
+    <h2 class="mt-2 mb-2">Billing</h2>
+    {% if user.role == 'admin' %}
+    <div class="alert alert-ok">Admin: purchases are free and activate immediately.</div>
+    {% endif %}
+
+    <div class="card mb-2">
+      <h3 class="mb-2">Buy / Renew Plan</h3>
+      <label>Plan</label>
+      <select id="plan">
+        {% for p in plans %}
+        <option value="{{ p.id }}">{{ p.name }} — ${{ '%.2f'|format(p.price_monthly) }}/mo</option>
+        {% endfor %}
+      </select>
+      <label>Apply to project (optional)</label>
+      <select id="project">
+        <option value="0">— None —</option>
+        {% for p in projects %}
+        <option value="{{ p.id }}">{{ p.name }}</option>
+        {% endfor %}
+      </select>
+      <label>Payment method</label>
+      <select id="method">
+        <option value="aba">ABA</option>
+        <option value="bakong">Bakong</option>
+        <option value="bank">Bank transfer</option>
+      </select>
+      <p class="muted">Payment is verified by admin (except admin free purchase). Do not mark paid from frontend alone.</p>
+      <button class="btn btn-primary" onclick="buy()">Place Order</button>
+    </div>
+
+    <div class="card">
+      <h3 class="mb-2">Order History</h3>
+      <table class="table">
+        <thead><tr><th>ID</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th><th></th></tr></thead>
+        <tbody>
+          {% for o in orders %}
+          <tr>
+            <td>#{{ o.id }}</td>
+            <td>${{ '%.2f'|format(o.amount) }}</td>
+            <td>{{ o.payment_method or '—' }}</td>
+            <td><span class="badge {% if o.status=='paid' %}badge-ok{% elif o.status in ['pending','awaiting_confirm'] %}badge-warn{% else %}badge-err{% endif %}">{{ o.status }}</span></td>
+            <td>{{ o.created_at }}</td>
+            <td>{% if o.status in ['pending','awaiting_confirm'] %}<button class="btn btn-ghost btn-sm" onclick="cancel({{ o.id }})">Cancel</button>{% endif %}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="muted">No orders</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script src="/static/js/api.js"></script>
+  <script>
+    async function buy() {
+      try {
+        const d = await postForm('/api/orders/create', {
+          plan_id: document.getElementById('plan').value,
+          project_id: document.getElementById('project').value,
+          payment_method: document.getElementById('method').value,
+        });
+        alert(d.status === 'paid' ? 'Order paid (admin free).' : 'Order placed. Wait for admin confirmation.');
+        location.reload();
+      } catch (e) { alert(e.message); }
+    }
+    async function cancel(id) {
+      await api('/api/orders/' + id + '/cancel', { method: 'POST' });
+      location.reload();
+    }
+  </script>
+</body>
+</html>

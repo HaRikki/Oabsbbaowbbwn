@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create Hosting — Anajak Host</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="logo">AJ</span> Anajak Host</a>
+      <div class="nav-links"><a href="/dashboard">Dashboard</a></div>
+    </nav>
+
+    <h2 class="mt-2 mb-2">Create Hosting</h2>
+    <div id="err" class="alert alert-error hidden"></div>
+
+    <div class="card mb-2">
+      <h3 class="mb-2">1. Project Type</h3>
+      <div class="type-grid" id="types">
+        <div class="type-card" data-type="telegram_bot"><div class="icon">TG</div>Telegram Bot</div>
+        <div class="type-card" data-type="discord_bot"><div class="icon">DC</div>Discord Bot</div>
+        <div class="type-card" data-type="website"><div class="icon">WEB</div>Website</div>
+        <div class="type-card" data-type="api"><div class="icon">API</div>API / Backend</div>
+        <div class="type-card" data-type="game"><div class="icon">GAME</div>Game Server</div>
+        <div class="type-card" data-type="docker"><div class="icon">DOCK</div>Docker</div>
+        <div class="type-card" data-type="custom"><div class="icon">APP</div>Custom</div>
+      </div>
+    </div>
+
+    <div class="card mb-2">
+      <h3 class="mb-2">2. Plan</h3>
+      <div class="grid grid-4" id="plans">
+        {% for plan in plans %}
+        <label class="plan" style="cursor:pointer">
+          <input type="radio" name="plan_id" value="{{ plan.id }}" {% if loop.first %}checked{% endif %} />
+          <strong>{{ plan.name }}</strong>
+          <div class="price">${{ '%.2f'|format(plan.price_monthly) }}</div>
+          <ul>
+            <li>{{ plan.ram_mb }} MB RAM</li>
+            <li>{{ plan.cpu }} vCPU</li>
+            <li>{{ plan.storage_gb }} GB Storage</li>
+          </ul>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card mb-2">
+      <h3 class="mb-2">3. Configuration</h3>
+      <label>Project name</label>
+      <input id="name" type="text" placeholder="my-project" required />
+      <label>Start command</label>
+      <input id="cmd" type="text" placeholder="python main.py  or  npm start" />
+      <label>Port (optional)</label>
+      <input id="port" type="number" placeholder="10000" />
+      <label>Source</label>
+      <select id="source_type">
+        <option value="upload">Upload files (via File Manager after create)</option>
+        <option value="github">GitHub Repository</option>
+        <option value="git">Git Repository</option>
+        <option value="docker">Docker Image</option>
+      </select>
+      <label>Source URL (if Git / Docker)</label>
+      <input id="source_url" type="text" placeholder="https://github.com/user/repo.git" />
+      <button class="btn btn-primary mt-1" id="createBtn">Create Hosting</button>
+    </div>
+  </div>
+  <script src="/static/js/api.js"></script>
+  <script>
+    let selectedType = 'telegram_bot';
+    document.querySelectorAll('.type-card').forEach(c => {
+      c.onclick = () => {
+        document.querySelectorAll('.type-card').forEach(x => x.classList.remove('selected'));
+        c.classList.add('selected');
+        selectedType = c.dataset.type;
+      };
+    });
+    document.querySelector('.type-card').classList.add('selected');
+
+    document.getElementById('createBtn').onclick = async () => {
+      const name = document.getElementById('name').value.trim();
+      if (!name) return showErr(document.getElementById('err'), 'Name required');
+      const plan = document.querySelector('input[name=plan_id]:checked');
+      if (!plan) return showErr(document.getElementById('err'), 'Select a plan');
+      try {
+        const data = await postForm('/api/projects/create', {
+          name,
+          project_type: selectedType,
+          plan_id: plan.value,
+          start_command: document.getElementById('cmd').value,
+          port: document.getElementById('port').value || 0,
+          source_type: document.getElementById('source_type').value,
+          source_url: document.getElementById('source_url').value,
+        });
+        location.href = '/project/' + data.id;
+      } catch (e) {
+        showErr(document.getElementById('err'), e.message);
+      }
+    };
+  </script>
+</body>
+</html>

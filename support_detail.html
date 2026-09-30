@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ticket — Anajak Host</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="logo">AJ</span> Anajak Host</a>
+      <div class="nav-links"><a href="/support">Support</a></div>
+    </nav>
+    <h2 class="mt-2">{{ ticket.subject }}</h2>
+    <p class="muted mb-2">Status: {{ ticket.status }}</p>
+    <div class="card mb-2">
+      {% for m in ticket.messages %}
+      <div style="padding:.75rem 0;border-bottom:1px solid var(--border)">
+        <strong>{% if m.is_admin %}Staff{% else %}You{% endif %}</strong>
+        <span class="muted">{{ m.created_at }}</span>
+        <p>{{ m.message }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% if ticket.status != 'closed' %}
+    <div class="card">
+      <textarea id="reply" rows="3" placeholder="Reply..."></textarea>
+      <button class="btn btn-primary mt-1" onclick="reply()">Send</button>
+      <button class="btn btn-ghost mt-1" onclick="closeT()">Close Ticket</button>
+    </div>
+    {% endif %}
+  </div>
+  <script src="/static/js/api.js"></script>
+  <script>
+    async function reply() {
+      await postForm('/api/support/{{ ticket.id }}/reply', { message: document.getElementById('reply').value });
+      location.reload();
+    }
+    async function closeT() {
+      await api('/api/support/{{ ticket.id }}/close', { method: 'POST' });
+      location.reload();
+    }
+  </script>
+</body>
+</html>

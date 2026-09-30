@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings — Anajak Host</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="logo">AJ</span> Anajak Host</a>
+      <div class="nav-links"><a href="/dashboard">Dashboard</a></div>
+    </nav>
+    <h2 class="mt-2 mb-2">Settings</h2>
+    <div class="card mb-2">
+      <h3>Profile</h3>
+      <label>Full name</label>
+      <input id="full_name" value="{{ user.full_name or '' }}" />
+      <p class="muted">Email: {{ user.email }} · Username: {{ user.username }}</p>
+      <button class="btn btn-primary" onclick="saveProfile()">Save Profile</button>
+    </div>
+    <div class="card">
+      <h3>Change Password</h3>
+      <label>Current password</label>
+      <input id="current" type="password" />
+      <label>New password</label>
+      <input id="newpass" type="password" />
+      <button class="btn btn-primary" onclick="savePass()">Update Password</button>
+    </div>
+  </div>
+  <script src="/static/js/api.js"></script>
+  <script>
+    async function saveProfile() {
+      await postForm('/api/settings/profile', { full_name: document.getElementById('full_name').value });
+      alert('Saved');
+    }
+    async function savePass() {
+      try {
+        await postForm('/api/settings/password', {
+          current: document.getElementById('current').value,
+          new_password: document.getElementById('newpass').value,
+        });
+        alert('Password updated');
+      } catch (e) { alert(e.message); }
+    }
+  </script>
+</body>
+</html>
